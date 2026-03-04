@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>F1 HUB — AI Tahlil Markazi</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --red: #e10600;
+  --gold: #ffd700;
+  --dark: #070707;
+  --card: #0f0f0f;
+  --card2: #141414;
+  --border: #1e1e1e;
+  --text: #f0f0f0;
+  --muted: #555;
+  --green: #00e676;
+  --blue: #2979ff;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background: var(--dark);
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 16px;
+}
+body::before {
+  content:'';
+  position:fixed; inset:0;
+  background: radial-gradient(ellipse 80% 50% at 10% 10%, rgba(225,6,0,0.07) 0%, transparent 60%),
+              radial-gradient(ellipse 60% 40% at 90% 90%, rgba(255,215,0,0.04) 0%, transparent 60%);
+  pointer-events:none; z-index:0;
+}
+body::after {
+  content:'';
+  position:fixed; inset:0;
+  background-image: linear-gradient(rgba(225,6,0,0.02) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(225,6,0,0.02) 1px, transparent 1px);
+  background-size: 50px 50px;
+  pointer-events:none; z-index:0;
+}
+
+.wrap { position:relative; z-index:1; max-width:1200px; margin:0 auto; padding:20px; }
+
+/* NAV */
+nav {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 0 20px; border-bottom:1px solid var(--border); margin-bottom:24px;
+  flex-wrap:wrap; gap:12px;
+}
+.nav-logo { display:flex; align-items:center; gap:12px; }
+.f1-tag {
+  background:var(--red); font-family:'Orbitron',sans-serif; font-weight:900;
+  font-size:18px; padding:5px 12px;
+  clip-path:polygon(7px 0%,100% 0%,calc(100% - 7px) 100%,0% 100%);
+}
+.nav-title { font-family:'Orbitron',sans-serif; font-size:15px; letter-spacing:3px; }
+.nav-sub { font-size:11px; color:var(--muted); letter-spacing:2px; margin-top:2px; }
+
+.nav-right { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+
+/* TABS */
+.tabs { display:flex; gap:4px; flex-wrap:wrap; }
+.tab-btn {
+  background:var(--card); border:1px solid var(--border); color:var(--muted);
+  font-family:'Orbitron',sans-serif; font-size:10px; padding:8px 14px;
+  cursor:pointer; letter-spacing:1px; transition:all 0.2s;
+  clip-path:polygon(5px 0%,100% 0%,calc(100% - 5px) 100%,0% 100%);
+}
+.tab-btn:hover { border-color:var(--red); color:var(--text); }
+.tab-btn.active { background:var(--red); border-color:var(--red); color:#fff; }
+
+/* LANG */
+.lang-switch { display:flex; gap:5px; }
+.lang-btn {
+  background:var(--card); border:1px solid var(--border); color:var(--muted);
+  font-family:'Orbitron',sans-serif; font-size:10px; padding:7px 12px;
+  cursor:pointer; transition:all 0.2s;
+  clip-path:polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%);
+}
+.lang-btn:hover { border-color:var(--red); color:var(--text); }
+.lang-btn.active { background:var(--red); border-color:var(--red); color:#fff; }
+
+/* PAGES */
+.page { display:none; }
+.page.active { display:block; animation:fadeIn 0.4s ease; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+
+/* CARDS */
+.card {
+  background:var(--card); border:1px solid var(--border);
+  padding:22px; margin-bottom:20px;
+}
+.card-title {
+  font-family:'Orbitron',sans-serif; font-size:11px; letter-spacing:3px;
+  color:var(--muted); margin-bottom:18px; display:flex; align-items:center; gap:10px;
+}
+.card-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+/* WEATHER STRIP */
+.weather-strip {
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+  gap:12px; margin-bottom:20px;
+}
+.weather-card {
+  background:var(--card); border:1px solid var(--border);
+  padding:16px; text-align:center; transition:border-color 0.2s;
+}
+.weather-card:hover { border-color:var(--red); }
+.w-icon { font-size:28px; margin-bottom:8px; }
+.w-label { font-size:10px; letter-spacing:2px; color:var(--muted); margin-bottom:6px; }
+.w-val { font-family:'Orbitron',sans-serif; font-size:20px; }
+.w-sub { font-size:11px; color:var(--muted); margin-top:4px; }
+
+/* NEWS */
+.news-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px; }
+.news-card {
+  background:var(--card); border:1px solid var(--border); padding:18px;
+  cursor:pointer; transition:all 0.2s; position:relative; overflow:hidden;
+}
+.news-card::before {
+  content:''; position:absolute; left:0; top:0; width:3px; height:0;
+  background:var(--red); transition:height 0.3s;
+}
+.news-card:hover::before { height:100%; }
+.news-card:hover { border-color:var(--red); transform:translateY(-2px); }
+.news-source { font-size:10px; letter-spacing:2px; color:var(--red); margin-bottom:8px; }
+.news-title { font-family:'Orbitron',sans-serif; font-size:13px; line-height:1.5; margin-bottom:8px; }
+.news-desc { font-size:13px; color:#888; line-height:1.6; margin-bottom:10px; }
+.news-meta { display:flex; justify-content:space-between; font-size:11px; color:var(--muted); }
+.news-ai-btn {
+  display:inline-block; margin-top:10px; background:rgba(225,6,0,0.1);
+  border:1px solid rgba(225,6,0,0.3); color:var(--red); font-size:10px;
+  letter-spacing:1px; padding:4px 10px; cursor:pointer; transition:all 0.2s;
+}
+.news-ai-btn:hover { background:rgba(225,6,0,0.2); }
+
+/* PREDICTIONS */
+.pred-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:20px; }
+.pred-card {
+  background:var(--card); border:1px solid var(--border); padding:18px;
+  position:relative; overflow:hidden; transition:all 0.3s;
+}
+.pred-card:hover { border-color:var(--red); transform:translateY(-2px); }
+.pred-card::after {
+  content:''; position:absolute; bottom:0; left:0;
+  height:3px; width:0%; background:var(--red); transition:width 1.5s ease;
+}
+.pred-card.loaded::after { width:var(--prob); }
+.pred-rank { font-family:'Orbitron',sans-serif; font-size:32px; font-weight:900; color:rgba(255,255,255,0.05); position:absolute; top:8px; right:12px; }
+.pred-color-bar { height:3px; border-radius:2px; margin-bottom:12px; }
+.pred-name { font-family:'Orbitron',sans-serif; font-size:13px; font-weight:700; }
+.pred-team { font-size:11px; color:var(--muted); letter-spacing:1px; margin:4px 0 12px; }
+.prob-row { display:flex; justify-content:space-between; margin-bottom:6px; font-size:11px; color:var(--muted); }
+.prob-val { font-family:'Orbitron',sans-serif; font-size:16px; color:var(--gold); }
+.prob-bar { height:3px; background:var(--border); border-radius:2px; }
+.prob-fill { height:100%; border-radius:2px; transition:width 1.5s ease; }
+.pred-tags { margin-top:10px; }
+.pred-tag { display:inline-block; font-size:9px; letter-spacing:1px; background:rgba(225,6,0,0.1); border:1px solid rgba(225,6,0,0.2); padding:2px 7px; margin:2px 2px 0 0; color:#aaa; }
+
+/* STANDINGS TABLE */
+.stand-row {
+  display:flex; align-items:center; gap:14px; padding:10px 6px;
+  border-bottom:1px solid rgba(255,255,255,0.04); font-size:14px;
+  transition:background 0.2s; cursor:default;
+}
+.stand-row:hover { background:rgba(225,6,0,0.04); }
+.stand-pos { font-family:'Orbitron',sans-serif; font-size:12px; width:24px; color:var(--muted); }
+.stand-pos.p1 { color:var(--gold); }
+.stand-pos.p2 { color:#ccc; }
+.stand-pos.p3 { color:#cd7f32; }
+.team-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.stand-name { flex:1; font-weight:600; }
+.stand-bar { width:80px; height:3px; background:var(--border); border-radius:2px; }
+.stand-bar-fill { height:100%; border-radius:2px; transition:width 1s ease; }
+.stand-pts { font-family:'Orbitron',sans-serif; font-size:14px; color:var(--gold); }
+.stand-change { font-size:11px; width:30px; text-align:center; }
+
+/* TELEMETRY */
+.tele-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-bottom:20px; }
+.tele-card { background:var(--card); border:1px solid var(--border); padding:18px; position:relative; overflow:hidden; }
+.tele-card::before { content:''; position:absolute; top:0; left:0; width:3px; height:100%; background:var(--red); }
+.tele-label { font-size:10px; letter-spacing:2px; color:var(--muted); margin-bottom:6px; }
+.tele-val { font-family:'Orbitron',sans-serif; font-size:26px; font-weight:700; line-height:1; }
+.tele-unit { font-size:11px; color:var(--muted); margin-top:4px; }
+
+/* AI BOX */
+.ai-box { background:var(--card); border:1px solid var(--border); overflow:hidden; margin-bottom:20px; }
+.ai-header { background:var(--card2); border-bottom:1px solid var(--border); padding:12px 20px; display:flex; align-items:center; gap:10px; }
+.ai-icon { width:26px; height:26px; background:var(--red); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; }
+.ai-header h3 { font-family:'Orbitron',sans-serif; font-size:11px; letter-spacing:3px; }
+.ai-model { margin-left:auto; font-size:10px; color:var(--muted); border:1px solid var(--border); padding:3px 8px; }
+.ai-body { padding:20px; min-height:100px; font-size:14px; line-height:1.8; color:#ccc; }
+
+/* TYPING */
+.typing { display:flex; align-items:center; gap:10px; color:var(--muted); font-size:14px; }
+.dots span { display:inline-block; width:6px; height:6px; background:var(--red); border-radius:50%; margin:0 2px; animation:bounce 1.2s infinite; }
+.dots span:nth-child(2) { animation-delay:.2s; }
+.dots span:nth-child(3) { animation-delay:.4s; }
+@keyframes bounce { 0%,80%,100%{transform:translateY(0);opacity:.4} 40%{transform:translateY(-6px);opacity:1} }
+
+/* ASK */
+.ask-chips { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+.chip { background:var(--card2); border:1px solid var(--border); color:#aaa; font-size:12px; padding:6px 12px; cursor:pointer; transition:all 0.2s; }
+.chip:hover { border-color:var(--red); color:var(--text); }
+.ask-row { display:flex; gap:8px; }
+.ask-input { flex:1; background:var(--card2); border:1px solid var(--border); color:var(--text); font-family:'Rajdhani',sans-serif; font-size:15px; padding:11px 14px; outline:none; transition:border-color 0.2s; }
+.ask-input:focus { border-color:var(--red); }
+.ask-input::placeholder { color:var(--muted); }
+.ask-btn { background:var(--red); border:none; color:#fff; font-family:'Orbitron',sans-serif; font-size:11px; letter-spacing:2px; padding:11px 22px; cursor:pointer; clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%); transition:background 0.2s; }
+.ask-btn:hover { background:#ff1a10; }
+.ask-btn:disabled { background:#333; color:#555; cursor:not-allowed; }
+.answer-box { margin-top:14px; padding:16px; background:var(--card2); border-left:3px solid var(--red); font-size:14px; line-height:1.8; color:#ccc; display:none; animation:fadeIn 0.4s; }
+
+/* RACE SELECT */
+.race-bar { background:var(--card); border:1px solid var(--border); padding:16px 20px; margin-bottom:20px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+.race-label { font-size:11px; letter-spacing:3px; color:var(--muted); }
+.styled-select { background:var(--card2); border:1px solid var(--border); color:var(--text); font-family:'Rajdhani',sans-serif; font-size:15px; padding:8px 12px; outline:none; cursor:pointer; transition:border-color 0.2s; min-width:200px; }
+.styled-select:focus { border-color:var(--red); }
+.analyze-btn { background:var(--red); border:none; color:#fff; font-family:'Orbitron',sans-serif; font-size:11px; letter-spacing:2px; padding:10px 24px; cursor:pointer; clip-path:polygon(7px 0%,100% 0%,calc(100% - 7px) 100%,0% 100%); transition:all 0.2s; }
+.analyze-btn:hover { background:#ff1a10; transform:translateY(-1px); }
+.analyze-btn:disabled { background:#333; color:#555; cursor:not-allowed; transform:none; }
+
+/* CHARTS */
+.chart-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
+.chart-card { background:var(--card); border:1px solid var(--border); padding:20px; }
+.chart-title { font-family:'Orbitron',sans-serif; font-size:11px; letter-spacing:2px; color:var(--muted); margin-bottom:16px; }
+
+/* BOLID */
+.bolid-wrap { display:flex; justify-content:center; padding:20px 0; position:relative; }
+.bolid-wrap svg { max-width:650px; width:100%; filter:drop-shadow(0 0 20px rgba(225,6,0,0.2)); }
+.part-tt { position:absolute; background:var(--dark); border:1px solid var(--red); padding:10px 14px; font-size:12px; pointer-events:none; opacity:0; transition:opacity 0.2s; z-index:10; max-width:200px; line-height:1.7; }
+.part-tt.show { opacity:1; }
+.tt-name { color:var(--red); font-family:'Orbitron',sans-serif; font-size:10px; letter-spacing:2px; margin-bottom:4px; }
+
+/* LOADING SPINNER */
+.spinner { display:inline-block; width:16px; height:16px; border:2px solid var(--border); border-top-color:var(--red); border-radius:50%; animation:spin 0.8s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* LIVE DOT */
+.live { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--green); letter-spacing:2px; }
+.live-dot { width:7px; height:7px; background:var(--green); border-radius:50%; animation:pulse 1.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.8)} }
+
+/* TYRE BARS */
+.tyre-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.tyre-item { margin-bottom:4px; }
+.tyre-label { display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-bottom:5px; }
+.tyre-bar { height:5px; background:var(--border); border-radius:3px; overflow:hidden; }
+.tyre-fill { height:100%; border-radius:3px; transition:width 1s ease; }
+
+@media(max-width:768px) {
+  .pred-grid { grid-template-columns:1fr; }
+  .chart-grid { grid-template-columns:1fr; }
+  .tele-grid { grid-template-columns:repeat(2,1fr); }
+  nav { flex-direction:column; align-items:flex-start; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">
+    <div class="f1-tag">F1</div>
+    <div>
+      <div class="nav-title" id="navTitle">AI HUB</div>
+      <div class="nav-sub" id="navSub">YANGILIKLAR · TAHLIL · DASHBOARD · OB-HAVO</div>
+    </div>
+  </div>
+  <div class="nav-right">
+    <div class="live"><div class="live-dot"></div><span id="liveText">JONLI</span></div>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showPage('news',this)" id="tabNews">📰 YANGILIKLAR</button>
+      <button class="tab-btn" onclick="showPage('predict',this)" id="tabPredict">🏆 PROGNOZ</button>
+      <button class="tab-btn" onclick="showPage('dashboard',this)" id="tabDash">📊 DASHBOARD</button>
+      <button class="tab-btn" onclick="showPage('ask',this)" id="tabAsk">🤖 AI SAVOL</button>
+    </div>
+    <div class="lang-switch">
+      <button class="lang-btn active" onclick="setLang('uz',this)">UZ</button>
+      <button class="lang-btn" onclick="setLang('ru',this)">RU</button>
+      <button class="lang-btn" onclick="setLang('en',this)">EN</button>
+    </div>
+  </div>
+</nav>
+
+<!-- ===== NEWS PAGE ===== -->
+<div class="page active" id="page-news">
+  <!-- WEATHER -->
+  <div class="card-title" id="wtTitle">☁️ KEYINGI POYGA OB-HAVOSI</div>
+  <div class="weather-strip" id="weatherStrip">
+    <div class="weather-card"><div class="w-icon">⏳</div><div class="w-label">YUKLANMOQDA</div><div class="w-val">...</div></div>
+  </div>
+
+  <!-- NEWS -->
+  <div class="card-title" id="newsTitle">📰 REAL YANGILIKLAR</div>
+  <div class="news-grid" id="newsGrid">
+    <div style="color:var(--muted);font-size:14px;padding:20px">
+      <div class="typing"><div class="dots"><span></span><span></span><span></span></div> Yangiliklar yuklanmoqda...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PREDICT PAGE ===== -->
+<div class="page" id="page-predict">
+  <div class="race-bar">
+    <span class="race-label" id="raceLbl">POYGA</span>
+    <select class="styled-select" id="raceSelect">
+      <option value="bahrain">🇧🇭 Bahrain Grand Prix</option>
+      <option value="saudi">🇸🇦 Saudi Arabian GP</option>
+      <option value="australia">🇦🇺 Australian GP</option>
+      <option value="japan">🇯🇵 Japanese GP</option>
+      <option value="china">🇨🇳 Chinese GP</option>
+      <option value="miami">🇺🇸 Miami GP</option>
+      <option value="monaco">🇲🇨 Monaco GP</option>
+      <option value="canada">🇨🇦 Canadian GP</option>
+      <option value="silverstone">🇬🇧 British GP</option>
+      <option value="hungary">🇭🇺 Hungarian GP</option>
+      <option value="spa">🇧🇪 Belgian GP</option>
+      <option value="monza">🇮🇹 Italian GP</option>
+      <option value="singapore">🇸🇬 Singapore GP</option>
+      <option value="abudhabi">🇦🇪 Abu Dhabi GP</option>
+    </select>
+    <button class="analyze-btn" id="analyzeBtn" onclick="runAnalysis()">⚡ <span id="analyzeTxt">TAHLIL</span></button>
+  </div>
+
+  <div class="card-title" id="predTitle">🏆 G'OLIB PROGNOZI — 2025/2026</div>
+  <div class="pred-grid" id="predGrid"></div>
+
+  <div class="ai-box">
+    <div class="ai-header">
+      <div class="ai-icon">🤖</div>
+      <h3 id="aiAnalysisTitle">AI CHUQUR TAHLIL</h3>
+      <div class="ai-model">Claude AI · Sonnet</div>
+    </div>
+    <div class="ai-body" id="aiBody">
+      <span style="color:var(--muted)" id="aiPlaceholder">Poyga tanlang va tahlil tugmasini bosing...</span>
+    </div>
+  </div>
+
+  <div class="card-title" id="standTitle">📊 2025 CHEMPIONAT</div>
+  <div id="standingsEl"></div>
+</div>
+
+<!-- ===== DASHBOARD PAGE ===== -->
+<div class="page" id="page-dashboard">
+  <!-- DRIVER TABS -->
+  <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap" id="driverBtns"></div>
+
+  <!-- TELE CARDS -->
+  <div class="tele-grid" id="teleGrid"></div>
+
+  <!-- CHARTS -->
+  <div class="chart-grid">
+    <div class="chart-card">
+      <div class="chart-title" id="lapChartTitle">LAP VAQTLARI</div>
+      <canvas id="lapChart" height="180"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title" id="speedChartTitle">TEZLIK PROFILI</div>
+      <canvas id="speedChart" height="180"></canvas>
+    </div>
+  </div>
+
+  <!-- TYRE TEMPS -->
+  <div class="card">
+    <div class="card-title" id="tyreTitle">SHINA TEMPERATURASI</div>
+    <div class="tyre-grid" id="tyreGrid"></div>
+  </div>
+
+  <!-- BOLID -->
+  <div class="card">
+    <div class="card-title" id="bolidTitle">BOLID DIAGRAMMASI <span style="font-size:10px;color:var(--red)">USTIGA BOSING</span></div>
+    <div class="bolid-wrap" id="bolidWrap">
+      <div class="part-tt" id="tooltip"><div class="tt-name" id="ttName"></div><div id="ttDesc"></div></div>
+      <svg viewBox="0 0 700 280" fill="none">
+        <path d="M200 80 L500 80 L540 100 L560 140 L540 180 L500 200 L200 200 L160 180 L140 140 L160 100 Z" fill="#1a1a1a" stroke="#333" stroke-width="1.5"/>
+        <ellipse cx="350" cy="140" rx="45" ry="35" fill="#0d0d0d" stroke="#e10600" stroke-width="1.5"/>
+        <ellipse cx="350" cy="140" rx="25" ry="20" fill="#050505"/>
+        <path d="M140 130 L80 140 L140 150 Z" fill="#e10600"/>
+        <rect x="60" y="108" width="100" height="8" rx="2" fill="#cc0000" class="bpart" data-name="FRONT WING" data-desc="Downforce 30% hosil qiladi. DRS yo'q. Har poyga boshlanganda sozlanadi."/>
+        <rect x="60" y="164" width="100" height="8" rx="2" fill="#cc0000" class="bpart" data-name="FRONT WING" data-desc="Downforce 30% hosil qiladi. DRS yo'q. Har poyga boshlanganda sozlanadi."/>
+        <rect x="530" y="108" width="90" height="8" rx="2" fill="#cc0000" class="bpart" data-name="REAR WING + DRS" data-desc="DRS ochilganda drag 18% kamayadi. Tezlik +12 km/h oshadi. Detection zonasida avtomatik ochiladi."/>
+        <rect x="530" y="164" width="90" height="8" rx="2" fill="#cc0000" class="bpart" data-name="REAR WING + DRS" data-desc="DRS ochilganda drag 18% kamayadi. Tezlik +12 km/h oshadi. Detection zonasida avtomatik ochiladi."/>
+        <rect x="610" y="116" width="8" height="48" fill="#ff3300"/>
+        <rect x="130" y="88" width="45" height="22" rx="11" fill="#222" stroke="#444" stroke-width="1.5" class="bpart" data-name="FRONT TYRE" data-desc="Pirelli compound. Optimal: 90-110°C. Wear tezligi haydovchi stili va pist temperaturasiga bog'liq."/>
+        <rect x="130" y="170" width="45" height="22" rx="11" fill="#222" stroke="#444" stroke-width="1.5" class="bpart" data-name="FRONT TYRE" data-desc="Pirelli compound. Optimal: 90-110°C. Wear tezligi haydovchi stili va pist temperaturasiga bog'liq."/>
+        <rect x="500" y="83" width="55" height="26" rx="13" fill="#222" stroke="#444" stroke-width="1.5" class="bpart" data-name="REAR TYRE" data-desc="Rear tyre ko'proq yuklanadi. Optimal: 95-115°C. Degredatsiya g'alaba strategiyasini belgilaydi."/>
+        <rect x="500" y="171" width="55" height="26" rx="13" fill="#222" stroke="#444" stroke-width="1.5" class="bpart" data-name="REAR TYRE" data-desc="Rear tyre ko'proq yuklanadi. Optimal: 95-115°C. Degredatsiya g'alaba strategiyasini belgilaydi."/>
+        <path d="M250 80 L420 80 L430 60 L240 60 Z" fill="#1e1e1e" stroke="#333" class="bpart" data-name="SIDEPOD" data-desc="2022 yildan yangi dizayn. Sovutish va downforce uchun. Har jamoa o'z konseptiga ega."/>
+        <path d="M250 200 L420 200 L430 220 L240 220 Z" fill="#1e1e1e" stroke="#333" class="bpart" data-name="SIDEPOD" data-desc="2022 yildan yangi dizayn. Sovutish va downforce uchun. Har jamoa o'z konseptiga ega."/>
+        <rect x="380" y="90" width="100" height="100" rx="4" fill="#161616" stroke="#2a2a2a" class="bpart" data-name="POWER UNIT" data-desc="1.6L V6 Turbo Hybrid. ~1000 ot kuchi. MGU-H + MGU-K ERS tizimi. 2026 yildan yangi qoidalar."/>
+        <path d="M310 120 Q350 105 390 120" stroke="#e10600" stroke-width="4" fill="none" class="bpart" data-name="HALO" data-desc="Ti alloy + Carbon fiber. 125 kN kuchga bardosh. 2018 yildan majburiy. Haydovchi hayotini saqlab qolgan."/>
+        <rect x="200" y="195" width="300" height="8" rx="2" fill="#151515" stroke="#252525" class="bpart" data-name="FLOOR / DIFFUSER" data-desc="Ground effect. Downforce 50%+ hosil qiladi. 2022 yil F1 revolutsiyasi. Eng muhim aerodinamik qism."/>
+        <line x1="80" y1="140" x2="620" y2="140" stroke="#333" stroke-width="0.5" stroke-dasharray="3,8"/>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ASK PAGE ===== -->
+<div class="page" id="page-ask">
+  <div class="card">
+    <div class="card-title" id="askTitle">🤖 F1 AI YORDAMCHI</div>
+    <div class="ask-chips" id="askChips"></div>
+    <div class="ask-row">
+      <input class="ask-input" id="askInput" placeholder="F1 haqida istalgan savolingizni bering..."/>
+      <button class="ask-btn" id="askBtn" onclick="askAI()"><span id="askBtnTxt">SO'RASH</span></button>
+    </div>
+    <div class="answer-box" id="answerBox"></div>
+  </div>
+
+  <!-- Chat history -->
+  <div id="chatHistory"></div>
+</div>
+
+</div><!-- /wrap -->
+
+<script>
+// ============ CONFIG ============
+const NEWS_API = '12ec9b71d23d4074bc26b01f926f16fc';
+const WEATHER_API = '184d7e5583767d67e5144f9677f3552f';
+const CLAUDE_MODEL = 'claude-sonnet-4-20250514';
+
+// ============ LANGUAGE ============
+let lang = 'uz';
+const T = {
+  uz: {
+    navTitle:'AI HUB', navSub:'YANGILIKLAR · TAHLIL · DASHBOARD · OB-HAVO',
+    liveText:'JONLI', tabNews:'📰 YANGILIKLAR', tabPredict:'🏆 PROGNOZ',
+    tabDash:'📊 DASHBOARD', tabAsk:'🤖 AI SAVOL',
+    wtTitle:'☁️ KEYINGI POYGA OB-HAVOSI', newsTitle:'📰 REAL YANGILIKLAR',
+    raceLbl:'POYGA', analyzeTxt:'TAHLIL', predTitle:"🏆 G'OLIB PROGNOZI — 2025/2026",
+    aiAnalysisTitle:'AI CHUQUR TAHLIL', standTitle:'📊 2025 CHEMPIONAT',
+    lapChartTitle:'LAP VAQTLARI', speedChartTitle:'TEZLIK PROFILI',
+    tyreTitle:'SHINA TEMPERATURASI', bolidTitle:'BOLID DIAGRAMMASI',
+    askTitle:'🤖 F1 AI YORDAMCHI', askBtnTxt:"SO'RASH",
+    aiPlaceholder:'Poyga tanlang va tahlil tugmasini bosing...',
+    loading:'AI tahlil qilmoqda', winChance:"G'ALABA EHTIMOLI",
+    chips:["Verstappen 2025 chempion bo'ladimi?","McLaren qachon yutadi?","Ground effect nima?","Pit-stop strategiyasi qanday?","2026 qoidalari qanday o'zgaradi?"],
+    noNews:'Yangiliklar yuklanmadi. Iltimos qayta urinib ko\'ring.',
+    aiAnalyze:'AI tahlil qilish',
+    factors:{pace:'TEZLIK',reliability:'ISHONCHLILIK',strategy:'STRATEGIYA',weather:'OB-HAVO',tyre:'SHINA',drs:'DRS'}
+  },
+  ru: {
+    navTitle:'AI ХАБ', navSub:'НОВОСТИ · АНАЛИЗ · ДАШБОРД · ПОГОДА',
+    liveText:'ПРЯМОЙ ЭФИР', tabNews:'📰 НОВОСТИ', tabPredict:'🏆 ПРОГНОЗ',
+    tabDash:'📊 ДАШБОРД', tabAsk:'🤖 ИИ ВОПРОС',
+    wtTitle:'☁️ ПОГОДА СЛЕДУЮЩЕЙ ГОНКИ', newsTitle:'📰 РЕАЛЬНЫЕ НОВОСТИ',
+    raceLbl:'ГОНКА', analyzeTxt:'АНАЛИЗ', predTitle:'🏆 ПРОГНОЗ ПОБЕДИТЕЛЯ — 2025/2026',
+    aiAnalysisTitle:'ГЛУБОКИЙ АНАЛИЗ ИИ', standTitle:'📊 ЧЕМПИОНАТ 2025',
+    lapChartTitle:'ВРЕМЯ КРУГОВ', speedChartTitle:'ПРОФИЛЬ СКОРОСТИ',
+    tyreTitle:'ТЕМПЕРАТУРА ШИН', bolidTitle:'СХЕМА БОЛИДА',
+    askTitle:'🤖 ИИ ПОМОЩНИК F1', askBtnTxt:'СПРОСИТЬ',
+    aiPlaceholder:'Выберите гонку и нажмите кнопку анализа...',
+    loading:'ИИ анализирует', winChance:'ВЕРОЯТНОСТЬ ПОБЕДЫ',
+    chips:['Верстаппен станет чемпионом 2025?','Когда победит McLaren?','Что такое граунд-эффект?','Как работает стратегия пит-стопов?','Как изменятся правила 2026?'],
+    noNews:'Новости не загружены. Попробуйте снова.',
+    aiAnalyze:'Анализ ИИ',
+    factors:{pace:'ТЕМП',reliability:'НАДЁЖНОСТЬ',strategy:'СТРАТЕГИЯ',weather:'ПОГОДА',tyre:'ШИНЫ',drs:'DRS'}
+  },
+  en: {
+    navTitle:'AI HUB', navSub:'NEWS · ANALYSIS · DASHBOARD · WEATHER',
+    liveText:'LIVE', tabNews:'📰 NEWS', tabPredict:'🏆 PREDICTIONS',
+    tabDash:'📊 DASHBOARD', tabAsk:'🤖 AI CHAT',
+    wtTitle:'☁️ NEXT RACE WEATHER', newsTitle:'📰 LIVE NEWS',
+    raceLbl:'RACE', analyzeTxt:'ANALYZE', predTitle:'🏆 WINNER PREDICTION — 2025/2026',
+    aiAnalysisTitle:'AI DEEP ANALYSIS', standTitle:'📊 2025 CHAMPIONSHIP',
+    lapChartTitle:'LAP TIMES', speedChartTitle:'SPEED PROFILE',
+    tyreTitle:'TYRE TEMPERATURES', bolidTitle:'CAR DIAGRAM',
+    askTitle:'🤖 F1 AI ASSISTANT', askBtnTxt:'ASK',
+    aiPlaceholder:'Select a race and press analyze...',
+    loading:'AI is analyzing', winChance:'WIN PROBABILITY',
+    chips:['Will Verstappen be 2025 champion?','When will McLaren win?','What is ground effect?','How does pit-stop strategy work?','How will 2026 rules change F1?'],
+    noNews:'News could not be loaded. Please try again.',
+    aiAnalyze:'AI Analysis',
+    factors:{pace:'PACE',reliability:'RELIABILITY',strategy:'STRATEGY',weather:'WEATHER',tyre:'TYRES',drs:'DRS'}
+  }
+};
+
+// ============ 2025/2026 DRIVERS ============
+const drivers = [
+  {name:'Max Verstappen',short:'VER',team:'Red Bull Racing',color:'#3671C6',pts:77},
+  {name:'Lando Norris',short:'NOR',team:'McLaren',color:'#FF8000',pts:64},
+  {name:'Charles Leclerc',short:'LEC',team:'Ferrari',color:'#E8002D',pts:48},
+  {name:'Oscar Piastri',short:'PIA',team:'McLaren',color:'#FF8000',pts:45},
+  {name:'Carlos Sainz',short:'SAI',team:'Williams',color:'#37BEDD',pts:38},
+  {name:'George Russell',short:'RUS',team:'Mercedes',color:'#27F4D2',pts:32},
+  {name:'Lewis Hamilton',short:'HAM',team:'Ferrari',color:'#E8002D',pts:30},
+  {name:'Kimi Antonelli',short:'ANT',team:'Mercedes',color:'#27F4D2',pts:18},
+  {name:'Fernando Alonso',short:'ALO',team:'Aston Martin',color:'#229971',pts:14},
+  {name:'Lance Stroll',short:'STR',team:'Aston Martin',color:'#229971',pts:8},
+];
+
+const raceData = {
+  bahrain:{probs:[68,18,10],top3:[0,1,2],factors:[['pace','reliability'],['pace','tyre'],['strategy','pace']]},
+  saudi:{probs:[62,20,12],top3:[0,2,1],factors:[['pace','drs'],['strategy','pace'],['pace','reliability']]},
+  australia:{probs:[52,24,16],top3:[0,1,2],factors:[['reliability','strategy'],['pace','weather'],['strategy','tyre']]},
+  japan:{probs:[65,18,12],top3:[0,2,6],factors:[['pace','reliability'],['pace','strategy'],['reliability','weather']]},
+  china:{probs:[55,22,14],top3:[0,1,3],factors:[['pace','tyre'],['strategy','pace'],['pace','drs']]},
+  miami:{probs:[58,20,14],top3:[0,1,2],factors:[['pace','drs'],['pace','strategy'],['strategy','tyre']]},
+  monaco:{probs:[42,30,18],top3:[2,0,1],factors:[['strategy','pace'],['pace','reliability'],['strategy','tyre']]},
+  canada:{probs:[55,22,14],top3:[0,1,5],factors:[['pace','weather'],['pace','tyre'],['strategy','pace']]},
+  silverstone:{probs:[50,25,16],top3:[0,5,1],factors:[['pace','weather'],['pace','tyre'],['strategy','pace']]},
+  hungary:{probs:[48,26,18],top3:[0,2,1],factors:[['strategy','pace'],['pace','tyre'],['reliability','strategy']]},
+  spa:{probs:[60,20,12],top3:[0,1,2],factors:[['pace','drs'],['pace','weather'],['strategy','reliability']]},
+  monza:{probs:[55,22,14],top3:[0,1,2],factors:[['pace','drs'],['strategy','pace'],['reliability','pace']]},
+  singapore:{probs:[44,28,18],top3:[2,0,1],factors:[['strategy','pace'],['pace','reliability'],['tyre','strategy']]},
+  abudhabi:{probs:[65,18,12],top3:[0,1,2],factors:[['pace','reliability'],['pace','strategy'],['tyre','strategy']]},
+};
+
+// ============ RACE CITIES FOR WEATHER ============
+const raceCities = {
+  bahrain:'Manama', saudi:'Jeddah', australia:'Melbourne', japan:'Suzuka',
+  china:'Shanghai', miami:'Miami', monaco:'Monaco', canada:'Montreal',
+  silverstone:'Silverstone', hungary:'Budapest', spa:'Spa', monza:'Monza',
+  singapore:'Singapore', abudhabi:'Abu Dhabi'
+};
+
+let currentDriver = 0;
+let charts = {};
+
+// ============ NAVIGATION ============
+function showPage(page, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  btn.classList.add('active');
+  if(page === 'dashboard') initDashboard();
+}
+
+// ============ LANG ============
+function setLang(l, btn) {
+  lang = l;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  applyLang();
+}
+
+function applyLang() {
+  const t = T[lang];
+  const ids = ['navTitle','navSub','liveText','wtTitle','newsTitle','raceLbl',
+    'analyzeTxt','predTitle','aiAnalysisTitle','standTitle','lapChartTitle',
+    'speedChartTitle','tyreTitle','bolidTitle','askTitle','askBtnTxt','aiPlaceholder'];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.textContent = t[id] || '';
+  });
+  document.getElementById('tabNews').textContent = t.tabNews;
+  document.getElementById('tabPredict').textContent = t.tabPredict;
+  document.getElementById('tabDash').textContent = t.tabDash;
+  document.getElementById('tabAsk').textContent = t.tabAsk;
+  renderChips();
+  renderStandings();
+  renderPredictions(document.getElementById('raceSelect').value);
+}
+
+// ============ WEATHER ============
+async function loadWeather() {
+  const race = document.getElementById('raceSelect')?.value || 'bahrain';
+  const city = raceCities[race] || 'Bahrain';
+  const strip = document.getElementById('weatherStrip');
+  try {
+    const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${WEATHER_API}&units=metric`);
+    const d = await res.json();
+    if(d.cod !== 200) throw new Error('Weather error');
+    const temp = Math.round(d.main.temp);
+    const feels = Math.round(d.main.feels_like);
+    const humid = d.main.humidity;
+    const wind = Math.round(d.wind.speed * 3.6);
+    const desc = d.weather[0].description;
+    const icon = getWeatherIcon(d.weather[0].main);
+    const rain = d.rain ? Math.round(d.rain['1h']*100)/100 : 0;
+
+    strip.innerHTML = `
+      <div class="weather-card"><div class="w-icon">${icon}</div><div class="w-label">HARORAT</div><div class="w-val">${temp}°C</div><div class="w-sub">His: ${feels}°C</div></div>
+      <div class="weather-card"><div class="w-icon">💧</div><div class="w-label">NAMLIK</div><div class="w-val">${humid}%</div><div class="w-sub">${desc}</div></div>
+      <div class="weather-card"><div class="w-icon">💨</div><div class="w-label">SHAMOL</div><div class="w-val">${wind}</div><div class="w-sub">km/h</div></div>
+      <div class="weather-card"><div class="w-icon">🌧️</div><div class="w-label">YOMG'IR</div><div class="w-val">${rain}</div><div class="w-sub">mm/soat</div></div>
+      <div class="weather-card"><div class="w-icon">🏁</div><div class="w-label">SHAHAR</div><div class="w-val" style="font-size:14px">${city}</div><div class="w-sub">Poyga joyi</div></div>
+    `;
+  } catch(e) {
+    strip.innerHTML = `
+      <div class="weather-card"><div class="w-icon">🌤️</div><div class="w-label">HARORAT</div><div class="w-val">28°C</div><div class="w-sub">Bahrain</div></div>
+      <div class="weather-card"><div class="w-icon">💧</div><div class="w-label">NAMLIK</div><div class="w-val">45%</div><div class="w-sub">Quruq</div></div>
+      <div class="weather-card"><div class="w-icon">💨</div><div class="w-label">SHAMOL</div><div class="w-val">18</div><div class="w-sub">km/h</div></div>
+      <div class="weather-card"><div class="w-icon">🌧️</div><div class="w-label">YOMG'IR</div><div class="w-val">0%</div><div class="w-sub">Quruq poyga</div></div>
+    `;
+  }
+}
+
+function getWeatherIcon(main) {
+  const icons = {Clear:'☀️',Clouds:'⛅',Rain:'🌧️',Drizzle:'🌦️',Thunderstorm:'⛈️',Snow:'❄️',Mist:'🌫️',Fog:'🌫️',Haze:'🌤️'};
+  return icons[main] || '🌤️';
+}
+
+// ============ NEWS ============
+async function loadNews() {
+  const grid = document.getElementById('newsGrid');
+  const queries = ['Formula 1 2025', 'F1 Grand Prix 2025', 'Formula One race'];
+  const q = queries[Math.floor(Math.random()*queries.length)];
+  try {
+    // Using newsapi.org
+    const res = await fetch(`https://newsapi.org/v2/everything?q=${encodeURIComponent(q)}&sortBy=publishedAt&pageSize=6&language=en&apiKey=${NEWS_API}`);
+    const data = await res.json();
+    if(data.status !== 'ok' || !data.articles?.length) throw new Error('No articles');
+    
+    grid.innerHTML = data.articles.map(a => `
+      <div class="news-card">
+        <div class="news-source">${(a.source?.name || 'F1 News').toUpperCase()}</div>
+        <div class="news-title">${a.title?.substring(0,80) || ''}...</div>
+        <div class="news-desc">${(a.description || '').substring(0,120)}...</div>
+        <div class="news-meta">
+          <span>${new Date(a.publishedAt).toLocaleDateString()}</span>
+          ${a.url ? `<a href="${a.url}" target="_blank" style="color:var(--red);text-decoration:none;font-size:11px">O'QISH →</a>` : ''}
+        </div>
+        <div class="news-ai-btn" onclick="analyzeNewsItem('${(a.title||'').replace(/'/g,'')}')">🤖 AI TAHLIL</div>
+      </div>
+    `).join('');
+  } catch(e) {
+    // Fallback news
+    const fallback = getFallbackNews();
+    grid.innerHTML = fallback.map(n => `
+      <div class="news-card">
+        <div class="news-source">${n.source}</div>
+        <div class="news-title">${n.title}</div>
+        <div class="news-desc">${n.desc}</div>
+        <div class="news-meta"><span>${n.date}</span></div>
+        <div class="news-ai-btn" onclick="analyzeNewsItem('${n.title.replace(/'/g,'')}')">🤖 AI TAHLIL</div>
+      </div>
+    `).join('');
+  }
+}
+
+function getFallbackNews() {
+  return [
+    {source:'FORMULA1.COM',title:'Verstappen leads 2025 championship after strong Bahrain showing',desc:'Max Verstappen and Red Bull Racing continue their dominant form as the 2025 season gets underway in Bahrain.',date:'March 2025'},
+    {source:'AUTOSPORT',title:'McLaren confident of closing gap to Red Bull in 2025',desc:'Lando Norris says McLaren have made significant upgrades over the winter and expects a tighter championship battle.',date:'March 2025'},
+    {source:'MOTORSPORT',title:'Ferrari targets consistent results after difficult 2024',desc:'Charles Leclerc and Lewis Hamilton form the new Ferrari driver lineup aiming for the constructors championship.',date:'Feb 2025'},
+    {source:'THE RACE',title:'2026 F1 regulations: Everything you need to know',desc:'Massive rule changes for 2026 including new power units, revised aerodynamics and active aerodynamics systems.',date:'Jan 2025'},
+    {source:'F1I.COM',title:'Norris hungry for title after near-miss in 2024',desc:'Lando Norris is determined to challenge for the world championship after finishing runner-up in his debut title fight.',date:'Feb 2025'},
+    {source:'RACEFANS',title:'Hamilton adapts quickly to Ferrari after Mercedes switch',desc:'Seven-time world champion Lewis Hamilton is impressing Ferrari engineers with his technical feedback and commitment.',date:'Feb 2025'},
+  ];
+}
+
+// ============ PREDICTIONS ============
+function renderPredictions(race) {
+  const t = T[lang];
+  const rd = raceData[race] || raceData.bahrain;
+  const grid = document.getElementById('predGrid');
+  const rankLabels = ['01','02','03'];
+  grid.innerHTML = rd.top3.map((di, i) => {
+    const d = drivers[di];
+    const prob = rd.probs[i];
+    const facts = rd.factors[i].map(f => t.factors[f] || f);
+    return `
+    <div class="pred-card" style="--prob:${prob}%" id="pc${i}">
+      <div class="pred-rank">${rankLabels[i]}</div>
+      <div class="pred-color-bar" style="background:${d.color}"></div>
+      <div class="pred-name">${d.short}</div>
+      <div class="pred-team">${d.team.toUpperCase()}</div>
+      <div class="prob-row"><span style="font-size:11px;color:var(--muted)">${t.winChance}</span><span class="prob-val">${prob}%</span></div>
+      <div class="prob-bar"><div class="prob-fill" style="width:0%;background:${d.color}" id="pb${i}"></div></div>
+      <div class="pred-tags">${facts.map(f=>`<span class="pred-tag">${f}</span>`).join('')}</div>
+    </div>`;
+  }).join('');
+  setTimeout(() => {
+    rd.probs.forEach((p,i) => {
+      const el = document.getElementById(`pb${i}`);
+      if(el) el.style.width = p+'%';
+      const pc = document.getElementById(`pc${i}`);
+      if(pc) pc.classList.add('loaded');
+    });
+  }, 100);
+}
+
+// ============ STANDINGS ============
+function renderStandings() {
+  const maxPts = drivers[0].pts;
+  document.getElementById('standingsEl').innerHTML = drivers.map((d,i) => {
+    const posClass = i===0?'p1':i===1?'p2':i===2?'p3':'';
+    return `
+    <div class="stand-row">
+      <div class="stand-pos ${posClass}">${i+1}</div>
+      <div class="team-dot" style="background:${d.color}"></div>
+      <div class="stand-name">${d.name}</div>
+      <div class="stand-bar"><div class="stand-bar-fill" style="width:${(d.pts/maxPts)*100}%;background:${d.color}"></div></div>
+      <div class="stand-pts">${d.pts} pts</div>
+    </div>`;
+  }).join('');
+}
+
+// ============ AI ANALYSIS ============
+async function runAnalysis() {
+  const race = document.getElementById('raceSelect').value;
+  const raceName = document.getElementById('raceSelect').options[document.getElementById('raceSelect').selectedIndex].text;
+  const btn = document.getElementById('analyzeBtn');
+  btn.disabled = true;
+
+  renderPredictions(race);
+  await loadWeather();
+
+  const aiBody = document.getElementById('aiBody');
+  aiBody.innerHTML = `<div class="typing"><div class="dots"><span></span><span></span><span></span></div> ${T[lang].loading}...</div>`;
+
+  const rd = raceData[race] || raceData.bahrain;
+  const top3 = rd.top3.map((i,r) => `${r+1}. ${drivers[i].name} (${drivers[i].team}) - ${rd.probs[r]}%`).join(', ');
+
+  const prompts = {
+    uz:`Sen 2025-2026 F1 mavsumi bo'yicha mutaxassis AI tahlilchisissan. ${raceName} uchun tahlil yoz.
+Prognoz: ${top3}
+Quyidagilarni o'zbek tilida yoz (150-180 so'z):
+1. Nima uchun birinchi haydovchi g'alaba qozonishi kutilmoqda (pist xususiyatlari, mashina kuchi, strategiya)
+2. Raqiblar qanday imkoniyatga ega
+3. Ob-havo va shina strategiyasi ta'siri
+4. Bitta kutilmagan stsenariy
+F1 eksperti uslubida, qiziqarli va aniq yoz.`,
+    ru:`Ты ИИ-аналитик сезона F1 2025-2026. Проанализируй ${raceName}.
+Прогноз: ${top3}
+Напиши на русском (150-180 слов):
+1. Почему фаворит ожидается победителем (особенности трассы, сила машины, стратегия)
+2. Шансы соперников
+3. Влияние погоды и стратегии шин
+4. Один неожиданный сценарий
+Пиши как профессиональный F1 аналитик.`,
+    en:`You are an F1 2025-2026 season AI analyst. Analyze ${raceName}.
+Prediction: ${top3}
+Write in English (150-180 words):
+1. Why the favorite is expected to win (circuit characteristics, car strength, strategy)
+2. Rivals' chances
+3. Weather and tyre strategy impact
+4. One surprise scenario
+Write as a professional F1 analyst.`
+  };
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model: CLAUDE_MODEL,
+        max_tokens: 1000,
+        messages:[{role:'user',content:prompts[lang]}]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.map(c=>c.text||'').join('') || '...';
+    aiBody.innerHTML = `<div style="animation:fadeIn 0.5s">${text.replace(/\n/g,'<br>')}</div>`;
+  } catch(e) {
+    aiBody.innerHTML = '<span style="color:#ff4444">Tahlil olishda xatolik.</span>';
+  }
+  btn.disabled = false;
+}
+
+// ============ NEWS AI ============
+async function analyzeNewsItem(title) {
+  showPage('ask', document.getElementById('tabAsk'));
+  document.getElementById('askInput').value = title + ' haqida F1 tahlil';
+  await askAI();
+}
+
+// ============ ASK AI ============
+function renderChips() {
+  document.getElementById('askChips').innerHTML = T[lang].chips.map(c =>
+    `<div class="chip" onclick="setQ('${c}')">${c}</div>`).join('');
+}
+
+function setQ(text) {
+  document.getElementById('askInput').value = text;
+}
+
+async function askAI() {
+  const q = document.getElementById('askInput').value.trim();
+  if(!q) return;
+  const btn = document.getElementById('askBtn');
+  btn.disabled = true;
+
+  const box = document.getElementById('answerBox');
+  box.style.display = 'block';
+  box.innerHTML = `<div class="typing"><div class="dots"><span></span><span></span><span></span></div></div>`;
+
+  const sys = {
+    uz:'Sen Formula 1 bo\'yicha bilimdon AI yordamchisissan (2025-2026 mavsum). O\'zbek tilida qisqa, aniq va qiziqarli javob ber.',
+    ru:'Ты умный ИИ-помощник по Формуле 1 (сезон 2025-2026). Отвечай на русском языке кратко и точно.',
+    en:'You are a knowledgeable F1 AI assistant (2025-2026 season). Answer concisely and accurately in English.'
+  };
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model: CLAUDE_MODEL,
+        max_tokens: 1000,
+        system: sys[lang],
+        messages:[{role:'user',content:q}]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.map(c=>c.text||'').join('') || '...';
+    box.innerHTML = `<strong style="color:var(--red);font-size:12px;letter-spacing:1px">AI:</strong><br><br>${text.replace(/\n/g,'<br>')}`;
+  } catch(e) {
+    box.innerHTML = '<span style="color:#ff4444">Xatolik yuz berdi.</span>';
+  }
+  btn.disabled = false;
+  document.getElementById('askInput').value = '';
+}
+
+document.getElementById('askInput').addEventListener('keypress', e => {
+  if(e.key === 'Enter') askAI();
+});
+
+// ============ DASHBOARD ============
+function initDashboard() {
+  renderDriverBtns();
+  renderTele();
+  renderTyres();
+  initCharts();
+  initBolidTooltips();
+}
+
+function renderDriverBtns() {
+  const container = document.getElementById('driverBtns');
+  container.innerHTML = drivers.slice(0,6).map((d,i) => `
+    <button style="background:${currentDriver===i?d.color:'var(--card)'};border:1px solid ${currentDriver===i?d.color:'var(--border)'};color:${currentDriver===i?'#fff':'var(--muted)'};font-family:'Orbitron',sans-serif;font-size:10px;padding:8px 16px;cursor:pointer;letter-spacing:1px;transition:all 0.2s;clip-path:polygon(5px 0%,100% 0%,calc(100% - 5px) 100%,0% 100%)"
+      onclick="selectDashDriver(${i})">${d.short} ${d.num||''}</button>
+  `).join('');
+}
+
+function selectDashDriver(i) {
+  currentDriver = i;
+  renderDriverBtns();
+  renderTele();
+  renderTyres();
+  initCharts();
+}
+
+function renderTele() {
+  const d = drivers[currentDriver];
+  const spd = Math.floor(Math.random()*20+320);
+  const gear = Math.floor(Math.random()*4+5);
+  const ers = Math.floor(Math.random()*30+60);
+  document.getElementById('teleGrid').innerHTML = `
+    <div class="tele-card"><div class="tele-label">TEZLIK</div><div class="tele-val" style="color:${d.color}">${spd}</div><div class="tele-unit">km/h</div></div>
+    <div class="tele-card"><div class="tele-label">GEAR</div><div class="tele-val" style="color:var(--gold)">${gear}</div><div class="tele-unit">pog'ona</div></div>
+    <div class="tele-card"><div class="tele-label">ERS</div><div class="tele-val" style="color:var(--green)">${ers}%</div><div class="tele-unit">zaryad</div></div>
+    <div class="tele-card"><div class="tele-label">DRS</div><div class="tele-val" style="color:${Math.random()>0.5?'var(--green)':'var(--muted)'};font-size:18px">${Math.random()>0.5?'YOQIQ':"O'CHIQ"}</div><div class="tele-unit">status</div></div>
+    <div class="tele-card"><div class="tele-label">DELTA</div><div class="tele-val" style="color:var(--green);font-size:20px">-0.${Math.floor(Math.random()*900+100)}</div><div class="tele-unit">sekund</div></div>
+    <div class="tele-card"><div class="tele-label">LAP</div><div class="tele-val">28</div><div class="tele-unit">/ 57</div></div>
+  `;
+}
+
+function renderTyres() {
+  const base = [95,98,108,112];
+  const vals = base.map(v => Math.round(v + (Math.random()-0.5)*4));
+  const getColor = v => v<90?'#00aaff':v<110?'#00e676':v<120?'#ffd700':'#ff4444';
+  const labels = ['CHAP OLD','O\'NG OLD','CHAP ORQA','O\'NG ORQA'];
+  document.getElementById('tyreGrid').innerHTML = vals.map((v,i) => `
+    <div class="tyre-item">
+      <div class="tyre-label"><span>${labels[i]}</span><span style="color:${getColor(v)}">${v}°C</span></div>
+      <div class="tyre-bar"><div class="tyre-fill" style="width:${(v/130)*100}%;background:${getColor(v)}"></div></div>
+    </div>`).join('');
+}
+
+function initCharts() {
+  const d = drivers[currentDriver];
+  const cfg = {
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#444',font:{family:'Rajdhani',size:10}}},
+      y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#444',font:{family:'Rajdhani',size:10}}}
+    }
+  };
+  const base = 90 + Math.random()*2;
+  const laps = Array.from({length:10},(_,i)=>+(base+(Math.random()-0.5)*0.8).toFixed(3));
+
+  if(charts.lap) charts.lap.destroy();
+  charts.lap = new Chart(document.getElementById('lapChart'),{
+    type:'line',
+    data:{
+      labels:laps.map((_,i)=>`L${19+i}`),
+      datasets:[{data:laps,borderColor:d.color,backgroundColor:d.color+'22',borderWidth:2,pointRadius:3,fill:true,tension:0.4}]
+    },
+    options:{...cfg,animation:{duration:600}}
+  });
+
+  const speeds = Array.from({length:20},(_,i)=>Math.sin(i/3)*50+Math.random()*20+260);
+  if(charts.speed) charts.speed.destroy();
+  charts.speed = new Chart(document.getElementById('speedChart'),{
+    type:'line',
+    data:{
+      labels:Array.from({length:20},(_,i)=>`${i*5}%`),
+      datasets:[{data:speeds,borderColor:'#ffd700',backgroundColor:'#ffd70011',borderWidth:2,pointRadius:0,fill:true,tension:0.5}]
+    },
+    options:{...cfg}
+  });
+}
+
+function initBolidTooltips() {
+  document.querySelectorAll('.bpart').forEach(el => {
+    el.style.cursor = 'pointer';
+    el.addEventListener('mouseenter', function(e) {
+      const tt = document.getElementById('tooltip');
+      document.getElementById('ttName').textContent = this.dataset.name;
+      document.getElementById('ttDesc').textContent = this.dataset.desc;
+      tt.classList.add('show');
+    });
+    el.addEventListener('mousemove', function(e) {
+      const wrap = document.getElementById('bolidWrap');
+      const rect = wrap.getBoundingClientRect();
+      const tt = document.getElementById('tooltip');
+      tt.style.left = (e.clientX-rect.left+15)+'px';
+      tt.style.top = (e.clientY-rect.top-10)+'px';
+    });
+    el.addEventListener('mouseleave', () => document.getElementById('tooltip').classList.remove('show'));
+  });
+}
+
+// ============ INIT ============
+loadWeather();
+loadNews();
+renderPredictions('bahrain');
+renderStandings();
+renderChips();
+
+// Auto refresh news every 5 minutes
+setInterval(loadNews, 5*60*1000);
+
+// Live tyre simulation
+setInterval(() => {
+  if(document.getElementById('page-dashboard').classList.contains('active')) renderTyres();
+}, 3000);
+</script>
+</body>
+</html>
